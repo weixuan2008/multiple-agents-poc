@@ -57,7 +57,7 @@ def get_city_code(city_name: str) -> Tuple[Optional[str], str]:
             "key": os.getenv("GAODEMAP_KEY"),
             "address": city_name,
         }
-        response = requests.get(os.getenv("GAODEMAP_WEATHER_URL"), params=params)
+        response = requests.get(os.getenv("GAODEMAP_GEOCODE_URL"), params=params)
         response.raise_for_status()
 
         data = response.json()
@@ -100,7 +100,7 @@ def get_weather(city: str) -> str:
         params = {
             "key": os.getenv("GAODEMAP_KEY"),
             "city": city_code,
-            "extensions": "all"
+            "extensions": "base"
         }
 
         response = requests.get(os.getenv("GAODEMAP_WEATHER_URL"), params=params)
