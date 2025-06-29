@@ -1,18 +1,17 @@
 import json
 import os
 import logging
-from datetime import datetime
 from typing import Dict, Tuple, Optional
 
 import requests
 from agents import Agent, Runner, function_tool
 from agents.model_settings import ModelSettings
 
-from model import get_model
+from app.model.model import get_model
 
 logger = logging.getLogger(__name__)
 
-CITY_CODE_CACHE_FILE = os.path.join(os.path.dirname(__file__), "city_code_cache.json")
+CITY_CODE_CACHE_FILE = os.path.join(os.path.dirname(__file__), "../data/city_code_cache.json")
 
 # https://lbs.amap.com/api/webservice/guide/api/weatherinfo
 
@@ -78,7 +77,7 @@ def get_city_code(city_name: str) -> Tuple[Optional[str], str]:
 
 
 @function_tool
-def get_weather(city: str) -> str:
+def get_weather_detail(city: str) -> str:
     """
     使用高德地图API获取指定城市的天气信息
 
@@ -229,25 +228,27 @@ def create_weather_agent() -> Agent:
     return Agent(
         name="天气助手",
         instructions="你是一个提供天气信息的助手，使用高德地图API获取实时天气数据。你可以提供详细的天气信息或简要的天气概况。高德API只支持中国城市的天气查询。",
-        tools=[get_weather, get_weather_brief],
-        model=get_model(),
-        model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                     max_tokens=int(os.getenv("MAX_TOKENS")))
+        tools=[get_weather_detail, get_weather_brief],
+        model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+        model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                     max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS")))
     )
 
 
 agent = create_weather_agent()
 
 
-async def run_weather_workflow():
+async def search_weather(city):
     # 1. 测试获取中国城市的天气
-    result = await Runner.run(agent, input="深圳的天气预报详情怎么样？")
+    text = f"{city}的详细天气预报详情怎么样？"
+    result = await Runner.run(agent, input=text)
     logger.info(result.final_output)
 
     # 2. 测试简要天气查询
-    result = await Runner.run(agent, input="给我深圳的天气简报")
+    text = f"给我{city}的天气简报"
+    result = await Runner.run(agent, input=text)
     logger.info(result.final_output)
 
     # 3. 测试非中国城市
-    result = await Runner.run(agent, input="纽约的天气怎么样？")
-    logger.info(result.final_output)
+    # result = await Runner.run(agent, input="纽约的天气怎么样？")
+    # logger.info(result.final_output)

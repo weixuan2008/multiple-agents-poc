@@ -7,24 +7,11 @@ from agents.model_settings import ModelSettings
 from agents import set_default_openai_client, set_tracing_disabled
 logger = logging.getLogger(__name__)
 
-# Accessing and printing value
-api_key = os.getenv("OPENAI_API_KEY")
-api_url = os.getenv("OPENAI_API_URL")
-model_name = os.getenv("OPENAI_MODEL_NAME")
-openai_temperature = os.getenv("OPENAI_TEMPERATURE")
-max_tokens = os.getenv("MAX_TOKENS")
-api_version = os.getenv("OPENAI_API_VERSION")
-query_timeout = os.getenv("OPENAI_QUERY_TIMEOUT")
+def get_model(api_url, api_key, model_name):
+    logger.info(f"The api url is {api_url}.")
+    logger.info(f"The api key is {api_key}.")
+    logger.info(f"The model name is {model_name}.")
 
-logger.info(f"api url is: {api_url}...")
-logger.info(f"api key is: {api_key}")
-logger.info(f"model name is: {model_name}")
-logger.info(f"openai temperature is: {openai_temperature}")
-logger.info(f"max tokens is: {max_tokens}")
-logger.info(f"api version is: {api_version}")
-logger.info(f"query timeout is: {query_timeout}")
-
-def get_model():
     external_client = AsyncOpenAI(
         base_url=api_url,
         api_key=api_key,

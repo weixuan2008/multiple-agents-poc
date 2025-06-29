@@ -6,7 +6,7 @@ from agents import Agent, Runner, function_tool
 from agents.model_settings import ModelSettings
 from duckduckgo_search import DDGS
 
-from model import get_model
+from app.model.model import get_model
 
 logger = logging.getLogger(__name__)
 current_date = datetime.now().strftime("%Y-%m")
@@ -36,33 +36,33 @@ news_agent = Agent(
     name="News Assistant",
     instructions="You provide the latest news articles for a given topic using DuckDuckGo search.",
     tools=[get_news_articles],
-    model=get_model(),
-    model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                 max_tokens=int(os.getenv("MAX_TOKENS")))
+    model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+    model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                 max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS")))
 )
 
 # Editor agent to edit news
 editor_agent = Agent(
     name="Editor Assistant",
     instructions="Rewrite and give me as news article ready for publishing. Each News story in separate section.",
-    model=get_model(),
-    model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                 max_tokens=int(os.getenv("MAX_TOKENS")))
+    model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+    model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                 max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS")))
 )
 
 
 # 3. Create wokflow
-def run_news_workflow(topic):
+async def search_news(topic):
     logger.info("Running news Agent workflow...")
 
     # Step1, fetch news
-    news_response = Runner.run_sync(news_agent, f"Get me the news about {topic} on {current_date}")
+    news_response = await Runner.run(news_agent, f"Get me the news about {topic} on {current_date}")
 
     # Access the content from RunResult object
     raw_news = news_response.final_output
 
     # Step2, pass news to editor for final review
-    edited_news_response = Runner.run_sync(editor_agent, raw_news)
+    edited_news_response = await Runner.run(editor_agent, raw_news)
 
     # Access the content from RunResult object
     edited_news = edited_news_response.final_output

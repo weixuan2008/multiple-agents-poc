@@ -4,12 +4,23 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-
 from agents import Agent, Runner, function_tool, ModelSettings, trace
 from pydantic import BaseModel
 
-from model import get_model
+from app.model.model import get_model
+
 logger = logging.getLogger(__name__)
+
+"""
+此示例演示了一个确定性流程，其中每个步骤由一个Agent执行。
+1. 第一个Agent生成故事大纲
+2. 我们将大纲提供给第二个Agent
+3. 第二个Agent检查大纲是否质量良好，以及是否是科幻故事
+4. 如果大纲质量不佳或不是科幻故事，我们就此停止
+5. 如果大纲质量良好且是科幻故事，我们将大纲提供给第三个Agent
+6. 第三个Agent撰写故事
+7. 将最终的故事保存到本地文件
+"""
 
 # Config parameters
 CONFIG = {
@@ -20,9 +31,9 @@ CONFIG = {
 story_outline_agent = Agent(
     name="story_outline_agent",
     instructions="根据用户输入生成一个非常简短的故事大纲。",
-    model=get_model(),
-    model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                 max_tokens=int(os.getenv("MAX_TOKENS"))
+    model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+    model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                 max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS"))
                                  )
 )
 
@@ -39,9 +50,9 @@ outline_checker_agent = Agent(
     name="outline_checker_agent",
     instructions="阅读给定的故事大纲，并判断其质量。同时，确定它是否是一个科幻故事。",
     output_type=OutlineChecker,
-    model=get_model(),
-    model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                 max_tokens=int(os.getenv("MAX_TOKENS"))
+    model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+    model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                 max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS"))
                                  )
 )
 
@@ -51,9 +62,9 @@ story_agent = Agent(
     name="story_agent",
     instructions="根据给定的大纲撰写一个短篇故事。",
     output_type=str,
-    model=get_model(),
-    model_settings=ModelSettings(temperature=float(os.getenv("OPENAI_TEMPERATURE")),
-                                 max_tokens=int(os.getenv("MAX_TOKENS"))),
+    model=get_model(os.getenv("OLLAMA_API_URL"), os.getenv("OLLAMA_API_KEY"), os.getenv("OLLAMA_MODEL_NAME")),
+    model_settings=ModelSettings(temperature=float(os.getenv("OLLAMA_TEMPERATURE")),
+                                 max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS"))),
 )
 
 
@@ -89,7 +100,7 @@ def save_story_to_file(story_content, user_prompt):
     return file_path
 
 
-async def create_story():
+async def write_story():
     try:
         input_prompt = input("你想要什么类型的故事？")
         if not input_prompt.strip():
